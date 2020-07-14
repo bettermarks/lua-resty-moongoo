@@ -26,6 +26,7 @@ function _M.new(uri)
   local wtimeout = conninfo.query and conninfo.query.wtimeoutMS or 1000
   local journal = conninfo.query and conninfo.query.journal or false
   local ssl = conninfo.query and conninfo.query.ssl or false
+  local auth_source = conninfo.query and conninfo.query.authSource or nil
 
   local stimeout = conninfo.query.socketTimeoutMS and conninfo.query.socketTimeoutMS or nil
 
@@ -41,6 +42,7 @@ function _M.new(uri)
     password = conninfo.password or "";
     auth_algo = auth_algo,
     ssl = ssl,
+    auth_source = auth_source,
     version = nil
   }, mt)
 end
@@ -49,9 +51,15 @@ function _M._auth(self, protocol)
  if not self.user then return 1 end
 
  if not protocol or protocol < cbson.int(3) or self.auth_algo == "MONGODB-CR" then
-   return auth_cr(self:db(self.default_db), self.user, self.password)
+   if not self.auth_source then
+     return auth_scram(self:db(self.default_db), self.user, self.password)
+   end
+   return auth_cr(self:db(self.auth_source), self.user, self.password)
  else
-   return auth_scram(self:db(self.default_db), self.user, self.password)
+   if not self.auth_source then
+     return auth_scram(self:db(self.default_db), self.user, self.password)
+   end
+   return auth_scram(self:db(self.auth_source), self.user, self.password)
  end
 
 end
