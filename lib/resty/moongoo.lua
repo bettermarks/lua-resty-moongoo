@@ -17,7 +17,11 @@ local mt = { __index = _M }
 function _M.new(uri)
   local conninfo = parse_uri(uri)
 
-  if not conninfo.scheme or conninfo.scheme ~= "mongodb" then
+  if not conninfo then
+      return nil, "Cant parse connection uri"
+    end
+
+  if not conninfo or not conninfo.scheme or conninfo.scheme ~= "mongodb" then
     return nil, "Wrong scheme in connection uri"
   end
 
